@@ -1,60 +1,105 @@
-Security Threat Model: WordVision ### Executive Summary This report provides a comprehensive security threat analysis for WordVision, an ePub reader integrated with AI-powered image generation. The analysis focuses on the intersection of traditional application security and emerging AI-specific risks, providing a prioritized roadmap for remediation.
+# Security Threat Model: WordVision
 
-## Data Movement Map
+This document provides a comprehensive threat model for the WordVision application, employing the STRIDE methodology and addressing AI-specific risks.
 
-The following diagram visualizes the flow of data between the user, the local application environment, and the cloud-based AI generation backend.
+---
 
-Code snippet
-graph LR
-    User((User)) -->|ePub File| Reader[WordVision App]
-    Reader -->|Metadata/Image Prompt| AI_Gen[AI Image Engine]
-    AI_Gen -->|Generated Image| Reader
-    Reader -->|Storage| LocalDB[(Local Cache/History)]
-    
-    subgraph Trust Boundary
-    Reader
-    LocalDB
-    end
-## STRIDE Threat Analysis
-Spoofing
-Threat: An attacker could impersonate the AI Image Engine backend to send malicious payloads or unauthorized images to the user's reader.
+## 1. Data Movement Map
 
-Mitigation: Implement strict **TLS** certificate pinning and **API** key validation for all outbound requests to the AI service.
+The following diagram visualizes the flow of data between the user, the frontend, the FastAPI backend, and the various cloud and AI services used by the application.
 
-Tampering Threat: Malicious ePub files containing embedded scripts could attempt to modify the application's local configuration or database.
+    graph TD
 
-Mitigation: Enforce strict file-type validation and sandbox the ePub rendering engine to prevent unauthorized file system access.
+    User[User] -->|Login/Auth Request| Cognito(AWS Cognito)
+    User -->|Upload Book| Frontend("Frontend - Expo React Native")
+    User -->|Select Text for Highlight/Visualize| Frontend
+    User -->|View Highlights/Images| Frontend
+    User -->|Regenerate/Edit Prompt| Frontend
 
-Repudiation Threat: A lack of logging for AI generation requests could prevent the tracing of *poisoned* prompts or billing discrepancies.
+    Frontend -->|User Credentials| Cognito
+    Cognito -->|Authentication Token| Frontend
+    Frontend -->|"ePub File Upload"| Backend("Backend - FastAPI")
+    Frontend -->|Highlight Text Data| Backend
+    Frontend -->|"Visualize Request (Text)"| Backend
+    Frontend -->|Image Regeneration Prompt| Backend
+    Frontend -->|Delete Image Request| Backend
 
-Mitigation: Implement cryptographically signed audit logs for all external **API** interactions and data transfers.
+    Backend -->|Store User Credentials| Cognito
+    Backend -->|"Store ePub Files"| S3(AWS S3)
+    Backend -->|Store Generated Images| S3
+    Backend -->|"Store Metadata, Annotations"| Mongo(MongoDB)
+    Backend -->|"Send Text for Image Generation"| HF(Hugging Face Spaces)
+    Backend -->|Retrieve Generated Image URL| HF
+    Backend -->|Retrieve ePub File Path| S3
+    Backend -->|Retrieve Generated Image Path| S3
+    Backend -->|Store/Retrieve User Data| Mongo
 
-### Information Disclosure
+    HF -->|Image Generation Request| HF
+    HF -->|Generated Image Data| Backend
 
-Threat: User reading habits or sensitive metadata could be leaked within the prompts sent to the image generation backend.
+    Mongo -->|User Metadata| Backend
+    S3 -->|"ePubs & Generated Images"| Backend
+---
 
-Mitigation: Sanitize and anonymize all prompts before they exit the local trust boundary; implement data-at-rest encryption for local caches.
+## 2. STRIDE THREAT ANALYSIS
 
-Denial of Service Threat: A high volume of complex image generation requests could exhaust local system resources or trigger rate-limits on the backend.
+### **Spoofing**
+*   **S1: Unauthorized Access via Stolen Credentials** (High)
+    *   **Component:** AWS Cognito, Backend
+    *   **Vector:** Phishing, brute-force, or compromised tokens.
+*   **S2: Malicious User Impersonation** (Medium)
+    *   **Component:** Frontend, Backend, MongoDB
+    *   **Vector:** Exploiting weak session management or authorization logic.
 
-Mitigation: Implement client-side rate limiting and resource quotas for the AI processing node.
+### **Tampering**
+*   **T1: Modification of Uploaded ePub Files** (High)
+    *   **Component:** AWS S3, Backend
+    *   **Vector:** Replacing legitimate ePub files with malicious XSS payloads.
+*   **T2: Tampering with Generated Images** (Medium)
+    *   **Component:** AWS S3, Backend
+    *   **Vector:** Replacing legitimate images with harmful or misleading content.
 
-Elevation of Privilege Threat: A vulnerability in the ePub parser could allow an attacker to execute code with the same permissions as the application.
+### **Repudiation**
+*   **R1: Inability to Trace Image Generation Requests** (Medium)
+    *   **Component:** Backend, Hugging Face
+    *   **Vector:** Lack of detailed logging on who initiated specific AI requests.
 
-Mitigation: Run the application under a Principle of Least Privilege (PoLP) model, restricting access to sensitive system APIs.
+### **Information Disclosure**
+*   **I1: Exposure of User Authentication Credentials** (High)
+    *   **Component:** AWS Cognito
+    *   **Vector:** Weak password policies or insecure credential storage.
+*   **I2: Unauthorized Access to Files and Images** (High)
+    *   **Component:** AWS S3, Backend
+    *   **Vector:** Insecure S3 bucket policies or weak API access control.
 
-## AI-Specific Security Risks
+### **Denial of Service**
+*   **D1: Resource Exhaustion on Hugging Face Spaces** (High)
+    *   **Component:** Hugging Face, Backend
+    *   **Vector:** Overwhelming the AI service with excessive image requests.
 
-Prompt Injection: Risk of *jailbreaking* the AI engine via malicious text hidden within ePub content to generate inappropriate or harmful imagery.
+### **Elevation of Privilege**
+*   **E1: Bypassing Authorization for Sensitive Data** (High)
+    *   **Component:** Backend
+    *   **Vector:** Exploiting API vulnerabilities to access data belonging to other users.
 
-Insecure Output Handling: The application must validate the dimensions and metadata of AI-generated images to prevent buffer overflow attacks during rendering.
+---
 
-## Prioritized Remediation Plan
+## 3. AI-SPECIFIC RISKS
 
-Critical: Sandbox the ePub rendering engine and implement **TLS** pinning.
+*   **Prompt Injection (PI1)**: Users injecting harmful instructions into text to bypass AI content filters. (High Severity)
+*   **Insecure Output Handling (IOH1)**: AI generating images containing malicious content or steganographic payloads. (High Severity)
+*   **Data Leakage (DL2)**: Inadvertent disclosure of user PII within AI-generated outputs. (Medium Severity)
 
-High: Automate prompt sanitization and implement encryption for the LocalDB.
+---
 
-Medium: Establish a comprehensive logging and monitoring framework for AI **API** calls.
+## 4. REMEDIATION PLAN
 
-Conclusion This threat model identifies critical security risks inherent in the WordVision architecture. By implementing the prioritized remediation plan, the development team can ensure a secure and resilient experience for users while leveraging the power of AI-driven features.
+1.  **Critical Priority**: Implement robust **Input Validation & Sanitization** for all ePub uploads and AI prompts.
+2.  **High Priority**: Enforce **Strong Authentication (MFA)** via AWS Cognito and lock down **S3 Bucket Policies**.
+3.  **Medium Priority**: Establish comprehensive **Logging & Monitoring** for all backend and AI API interactions.
+
+---
+
+## Conclusion
+
+This threat model identifies critical security risks inherent in the **WordVision** architecture. By implementing this prioritized remediation plan, the development team can ensure a secure and resilient experience for users while leveraging the power of AI-driven features.
