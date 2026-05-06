@@ -11,11 +11,11 @@ graph LR
     Reader -->|Metadata/Image Prompt| AI_Gen[AI Image Engine]
     AI_Gen -->|Generated Image| Reader
     Reader -->|Storage| LocalDB[(Local Cache/History)]
-    
     subgraph Trust Boundary
         Reader
         LocalDB
     end
+    
 2. STRIDE Threat Analysis
 Spoofing
 Threat: An attacker could impersonate the AI Image Engine backend to send malicious payloads or unauthorized images to the user's reader.
