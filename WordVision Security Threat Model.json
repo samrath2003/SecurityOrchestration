@@ -1,0 +1,222 @@
+{
+  "name": "WordVision Security Threat Model",
+  "nodes": [
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "1",
+              "name": "technical_documentation",
+              "type": "string",
+              "value": "Overview WordVision transforms the ePub reading experience by integrating AI-powered image generation directly within the text. Readers can highlight any passage to generate custom visuals, creating an immersive and personalized journey through the content.  Technical Summary Backend: FastAPI powers the API for high-speed data handling.  Frontend: Built with Expo React Native for smooth cross-platform mobile performance.  Integrations: Utilizes Hugging Face Spaces for efficient AI image generation and Docker for consistent development environments.  Cloud & Database: AWS Cognito handles secure user authentication, AWS S3 stores generated images and ePub files, and MongoDB organizes metadata, annotations, and user-generated content.  For more technical specifications and how to get started, go to CONTRIBUTING.md  How To Use Login / Create an Account Click on \"Get Started\" on the top right button You will be redirected the the user login page, where you can either login or create a new account Home Page In the Home Page you can access all of your books. If you don't have any book yet, go to Upload a Book Upload a Book In the Home click on the Upload a book button on the top right. Select Pick a file Select a local epub file and click the Upload button Reading a book Click on the book in your library and you will be redirected to the Book Details page Click on the Read button on the top right and start reading your book. Create highlight To create a highlight, select the text that you with to highlight and right click. It will display two options:  Highlight: this option highlights the text for you, and will be save in the Highlights Page for future reference  Visualize: this option highlights the text and generates an image based on the selected text.  Visualize The Visualize feature lets you generate AI-powered custom visuals based on your selected text, enhancing your reading experience with immersive imagery.  How it works:  Highlight the Text: Select the passage or sentence you want to visualize and right-click to display the context menu. Choose \"Visualize\": Click on the Visualize option. The system will: Save the highlighted text for later reference. Generate an AI-powered image representing the selected passage. View Generated Image: Clicking on the highlight will show the generated image in a modal window. Here you can: Regenerate the Image: Use the refresh icon beside the \"Generated image\" label to regenerate the visual with updated context. image Regenerate using a custom text prompt: Use the edit icon to bring up a modal that allows you to enter a prompt for generating the image. image Delete the Image: Use the delete icon to remove the image from the highlight. image Access Saved Highlights: Navigate to the Highlights Page to review all previously generated visuals and highlights. With Visualize, WordVision transforms text into engaging visuals, creating a more dynamic and personalized reading experience."
+            },
+            {
+              "id": "2",
+              "name": "system_context",
+              "type": "string",
+              "value": "<__PLACEHOLDER_VALUE__Optional: System type, sensitive data handled, users, deployment environment__>"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "48d4ae5c-8f35-4347-b6b0-a6b343c34e92",
+      "name": "Prepare Documentation",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        464,
+        304
+      ]
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=You are an expert Security Engineering Assistant performing a comprehensive Threat Model.\n\nTechnical Documentation:\n{{ $json.technical_documentation }}\n\nSystem Context:\n{{ $json.system_context }}\n\nYour analysis MUST include:\n\n1. DATA MOVEMENT MAP:\n   - Create a detailed Mermaid.js diagram showing data flows between all components\n   - Include: Users, Frontend (Expo React Native), Backend (FastAPI), AWS Cognito, AWS S3, MongoDB, Hugging Face Spaces\n   - Show authentication flows, data storage, and AI image generation flows\n   - Use proper Mermaid syntax with graph TD or flowchart format\n\n2. STRIDE THREAT ANALYSIS:\n   - Spoofing: Identity verification weaknesses\n   - Tampering: Data integrity risks\n   - Repudiation: Audit and logging gaps\n   - Information Disclosure: Data exposure vulnerabilities\n   - Denial of Service: Availability threats\n   - Elevation of Privilege: Authorization bypass risks\n   For each category, identify specific threats with severity, affected components, and attack vectors\n\n3. AI-SPECIFIC RISKS:\n   - Prompt Injection vulnerabilities (user-controlled text to AI image generation)\n   - Insecure Output Handling (AI-generated images)\n   - Model Poisoning risks\n   - Data leakage through AI models\n   - Adversarial inputs to image generation\n\n4. REMEDIATION PLAN:\n   - Prioritized list (1 = highest priority)\n   - Specific security controls (Input Validation, Encryption at Rest, Rate Limiting, etc.)\n   - Implementation guidance\n   - Map controls to threats they mitigate\n   - Estimate implementation effort\n\nTone: Professional, objective, and technical. Focus on actionable security recommendations.",
+        "hasOutputParser": true,
+        "options": {
+          "systemMessage": "You are a professional security engineer specializing in threat modeling and application security. You analyze systems using STRIDE methodology and identify AI-specific security risks. Your output must be structured, comprehensive, and actionable."
+        }
+      },
+      "id": "b1a08d7e-1219-4c13-9083-3a43cd916a40",
+      "name": "Security Threat Model Analyzer",
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        688,
+        304
+      ]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "1",
+              "name": "markdown_report",
+              "type": "string",
+              "value": "=# Security Threat Model: WordVision\n\n## Executive Summary\nComprehensive security threat analysis for WordVision ePub reader with AI-powered image generation.\n\n---\n\n## 1. Data Movement Map\n\n{{ $json.output.data_flow_diagram }}\n\n---\n\n## 2. STRIDE Threat Analysis\n\n### Spoofing\n{{ $json.output.stride_analysis.spoofing.map(t => \"- **\" + t.threat + \"** (\" + t.severity + \")\\n  - Component: \" + t.affected_component + \"\\n  - Attack Vector: \" + t.attack_vector).join(\"\\n\\n\") }}\n\n### Tampering\n{{ $json.output.stride_analysis.tampering.map(t => \"- **\" + t.threat + \"** (\" + t.severity + \")\\n  - Component: \" + t.affected_component + \"\\n  - Attack Vector: \" + t.attack_vector).join(\"\\n\\n\") }}\n\n### Repudiation\n{{ $json.output.stride_analysis.repudiation.map(t => \"- **\" + t.threat + \"** (\" + t.severity + \")\\n  - Component: \" + t.affected_component + \"\\n  - Attack Vector: \" + t.attack_vector).join(\"\\n\\n\") }}\n\n### Information Disclosure\n{{ $json.output.stride_analysis.information_disclosure.map(t => \"- **\" + t.threat + \"** (\" + t.severity + \")\\n  - Component: \" + t.affected_component + \"\\n  - Attack Vector: \" + t.attack_vector).join(\"\\n\\n\") }}\n\n### Denial of Service\n{{ $json.output.stride_analysis.denial_of_service.map(t => \"- **\" + t.threat + \"** (\" + t.severity + \")\\n  - Component: \" + t.affected_component + \"\\n  - Attack Vector: \" + t.attack_vector).join(\"\\n\\n\") }}\n\n### Elevation of Privilege\n{{ $json.output.stride_analysis.elevation_of_privilege.map(t => \"- **\" + t.threat + \"** (\" + t.severity + \")\\n  - Component: \" + t.affected_component + \"\\n  - Attack Vector: \" + t.attack_vector).join(\"\\n\\n\") }}\n\n---\n\n## 3. AI-Specific Security Risks\n\n{{ $json.output.ai_specific_risks.map(r => \"### \" + r.risk + \" (\" + r.severity + \")\\n\\n\" + r.description + \"\\n\\n**Affected Component:** \" + r.affected_component).join(\"\\n\\n---\\n\\n\") }}\n\n---\n\n## 4. Prioritized Remediation Plan\n\n{{ $json.output.remediation_plan.sort((a, b) => a.priority - b.priority).map(p => \"### Priority \" + p.priority + \": \" + p.control + \"\\n\\n\" + p.description + \"\\n\\n- **Mitigates:** \" + p.affected_threats.join(\", \") + \"\\n- **Implementation Effort:** \" + p.implementation_effort).join(\"\\n\\n---\\n\\n\") }}\n\n---\n\n## Conclusion\n\nThis threat model identifies critical security risks and provides actionable remediation steps prioritized by severity and impact."
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "c8d0ce9e-fbca-4836-bdb0-fc6f8a6ea148",
+      "name": "Format as Markdown",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        1040,
+        304
+      ]
+    },
+    {
+      "parameters": {
+        "mode": "markdownToHtml",
+        "markdown": "={{ $json.markdown_report }}",
+        "destinationKey": "html_report",
+        "options": {
+          "completeHTMLDocument": true,
+          "ghCodeBlocks": true,
+          "tasklists": true,
+          "strikethrough": true,
+          "tables": true
+        }
+      },
+      "id": "e03e3bf8-5d8e-49aa-8820-c19584389e2f",
+      "name": "Convert to HTML",
+      "type": "n8n-nodes-base.markdown",
+      "typeVersion": 1,
+      "position": [
+        1264,
+        304
+      ]
+    },
+    {
+      "parameters": {
+        "modelName": "models/gemini-2.5-flash-lite",
+        "options": {}
+      },
+      "id": "ab367766-ddef-4a6a-9ae2-c69bd7391b93",
+      "name": "Google Gemini Model",
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1.1,
+      "position": [
+        704,
+        528
+      ],
+      "credentials": {
+        "googlePalmApi": {
+          "id": "c7AKR82GIvKcoIAo",
+          "name": "Google Gemini(PaLM) Api account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "formTitle": "AutomatedSecurityAssessment",
+        "formFields": {
+          "values": [
+            {
+              "fieldLabel": "Paste Technical Documentation/Code Here"
+            }
+          ]
+        },
+        "responseMode": "lastNode",
+        "options": {
+          "respondWithOptions": {
+            "values": {
+              "respondWith": "=text",
+              "formSubmittedText": "="
+            }
+          }
+        }
+      },
+      "type": "n8n-nodes-base.formTrigger",
+      "typeVersion": 2.5,
+      "position": [
+        256,
+        304
+      ],
+      "id": "8ccf0a69-01a4-4a0c-8225-e3117627cd26",
+      "name": "On form submission",
+      "webhookId": "48bf00ba-5033-455c-961c-df835ffb6a03"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Prepare Documentation": {
+      "main": [
+        [
+          {
+            "node": "Security Threat Model Analyzer",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Security Threat Model Analyzer": {
+      "main": [
+        [
+          {
+            "node": "Format as Markdown",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Format as Markdown": {
+      "main": [
+        [
+          {
+            "node": "Convert to HTML",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Gemini Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Security Threat Model Analyzer",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "On form submission": {
+      "main": [
+        [
+          {
+            "node": "Prepare Documentation",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Convert to HTML": {
+      "main": [
+        []
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "versionId": "1d0fbe14-de9f-4668-9fad-3a649e5e977b",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "5e3e3af058b8c609fa329bce0891742ee1e6d48668a1eb48dd64c7e8698e19b7"
+  },
+  "id": "t9jJaLAn2CLQcgGP",
+  "tags": []
+}
